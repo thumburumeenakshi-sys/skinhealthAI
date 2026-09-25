@@ -147,7 +147,19 @@ python src/train.py
 
 ---
 
-## 💻 Running the Web Application
+## ⚡ Vercel & Cloud Deployment
+
+### 1. Vercel Serverless Deployment (Instant 50MB Bundle)
+Vercel serverless functions have a 500 MB limit. Standard `tensorflow` (~2.4 GB) exceeds this limit. 
+
+This repository includes a pre-exported **ONNX Runtime engine** (`models/mobilenetv2_skinhealth.onnx` ~9.8 MB) and `vercel.json` configuration.
+
+- **Requirements File**: `requirements.txt` contains `onnxruntime` + `opencv-python-headless` (~65 MB total bundle size).
+- **Vercel Setup**: Connect your GitHub repository (`thumburumeenakshi-sys/skinhealthAI`) to Vercel. Vercel will automatically build and deploy the application in under 30 seconds!
+
+---
+
+## 💻 Running the Web Application Locally
 
 To start the Flask local web server:
 ```bash
