@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkinHealth AI - AI-Assisted Skin Disease Detection & Screening</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Header & Navigation Bar -->
+    <header>
+        <div class="container nav-container">
+            <div class="brand">
+                <div class="brand-icon">🔬</div>
+                <span>SkinHealth <span style="color: var(--primary);">AI</span></span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#screening" class="nav-link active">Screening</a></li>
+                <li><a href="#diseases-guide" class="nav-link">Diseases Explanation</a></li>
+                <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+                <li><a href="#history" class="nav-link">History</a></li>
+                <li><a href="#model-metrics" class="nav-link">Performance</a></li>
+            </ul>
+            <div class="model-badge">
+                <span class="dot"></span>
+                <span>MobileNetV2 Active</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Prominent Medical Disclaimer Banner -->
+    <div class="disclaimer-banner">
+        <span>⚠️ <strong>Medical Disclaimer:</strong> SkinHealth AI provides AI-assisted screening information only. It is NOT a medical diagnosis tool and does NOT replace evaluation by a qualified dermatologist.</span>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="container">
+        
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-pill">
+                <span>✨ Deep Learning Lesion Screening</span>
+            </div>
+            <h1>AI-Assisted Skin Disease <span>Detection & Screening</span></h1>
+            <p>Upload or capture an image of a skin lesion for instant computer-vision quality check, OpenCV preprocessing, and MobileNetV2 probability scoring across 8 skin condition classes.</p>
+        </section>
+
+        <!-- Screening & Upload Section -->
+        <section id="screening" class="card">
+            <div class="card-title">
+                <div class="card-title-icon">📷</div>
+                <h2>Skin Lesion Image Screening</h2>
+            </div>
+
+            <div class="upload-container">
+                <!-- Drag and Drop Dropzone -->
+                <div class="dropzone" id="dropzone">
+                    <div class="dropzone-icon">📁</div>
+                    <h3>Drag & Drop Lesion Image Here</h3>
+                    <p>Supports JPG, PNG, WEBP formats (Max file size 10 MB)</p>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" type="button">Choose Image File</button>
+                        <button class="btn btn-secondary" id="camera-btn" type="button">📷 Open Camera</button>
+                    </div>
+                    <input type="file" id="image-input" accept="image/jpeg,image/png,image/webp" style="display: none;">
+                </div>
+
+                <!-- Image Preview Card -->
+                <div class="preview-container" id="preview-container">
+                    <div class="preview-grid">
+                        <img src="" alt="Lesion Preview" id="preview-img" class="preview-img">
+                        <div class="preview-info">
+                            <h4 id="preview-name" style="font-size: 1.15rem; font-weight: 700;">image.jpg</h4>
+                            <p id="preview-meta" style="color: var(--text-muted); font-size: 0.88rem; margin-top: 4px;"></p>
+                            <div class="validation-tags" id="validation-tags">
+                                <!-- Dynamic Validation Badges -->
+                            </div>
+                            <button class="btn btn-primary" id="analyze-btn" type="button" style="margin-top: 14px;" disabled>
+                                🔬 Analyze Lesion with AI
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading Animation -->
+                <div class="loading-box" id="loading-box">
+                    <div class="spinner"></div>
+                    <div class="loading-steps" id="loading-step-text">Processing image with OpenCV...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Prediction Results Section -->
+        <section id="results-section" class="results-section">
+            
+            <!-- Low-Confidence Warning Banner -->
+            <div class="alert-low-confidence" id="alert-low-confidence" style="display: none;">
+                <span style="font-size: 1.8rem;">⚠️</span>
+                <div>
+                    <strong style="font-size: 1.05rem;">Low-Confidence Prediction Warning</strong>
+                    <p id="low-conf-notice-text" style="font-size: 0.92rem; margin-top: 4px;">Low-confidence prediction (< 50%). Please consult a qualified dermatologist for professional clinical evaluation.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+                    <h2 style="font-size: 1.6rem; font-weight: 800;">Screening Analysis Results</h2>
+                    <span style="color: var(--text-muted); font-size: 0.88rem; background: #f1f5f9; padding: 4px 12px; border-radius: 50px;">MobileNetV2 Neural Network Output</span>
+                </div>
+
+                <!-- Top Prediction Banner -->
+                <div class="top-prediction-banner">
+                    <div class="top-pred-info">
+                        <span style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 700;">Most Likely Condition</span>
+                        <h3 id="res-top-name">Condition Name</h3>
+                        <p id="res-top-category" style="color: var(--text-secondary); font-size: 0.98rem; font-weight: 500;"></p>
+                        <span class="risk-badge risk-low" id="res-risk-badge">Risk Level: Low</span>
+                    </div>
+
+                    <!-- Radial Confidence Circle -->
+                    <div class="confidence-circle" id="res-confidence-circle">
+                        <span class="confidence-value" id="res-confidence-val">0%</span>
+                        <span class="confidence-label">Confidence</span>
+                    </div>
+                </div>
+
+                <!-- Ranked Possible Conditions -->
+                <h3 style="margin-bottom: 18px; font-size: 1.25rem; font-weight: 700;">Ranked Possible Conditions (All 8 Classes)</h3>
+                <div class="ranked-list" id="ranked-list-container">
+                    <!-- Progress Bars Rendered via JS -->
+                </div>
+
+                <!-- Medical Guidance Cards -->
+                <div class="guidance-grid">
+                    <div class="info-box">
+                        <h4>📘 About This Condition</h4>
+                        <p id="res-desc-text" style="font-size: 0.92rem; color: var(--text-secondary);">Condition description will appear here.</p>
+                    </div>
+                    <div class="info-box">
+                        <h4>💡 General Skin-Care Guidance</h4>
+                        <p id="res-guidance-text" style="font-size: 0.92rem; color: var(--text-secondary);">Skin-care guidance advice.</p>
+                    </div>
+                </div>
+
+                <!-- Dermatologist Recommendation Card -->
+                <div class="derm-card">
+                    <h4>👨‍⚕️ Professional Dermatologist Recommendation</h4>
+                    <p id="res-derm-rec-text" style="font-size: 0.98rem; margin-bottom: 14px; color: var(--text-primary); font-weight: 500;">Recommendation text...</p>
+                    <div style="font-size: 0.88rem; color: var(--text-secondary); background: white; padding: 14px; border-radius: 10px; border: 1px solid #a7f3d0;">
+                        <strong>ABCDE Melanoma Self-Check Guidelines:</strong>
+                        <ul style="margin-left: 20px; margin-top: 6px;">
+                            <li><strong>A - Asymmetry:</strong> One half of the lesion does not match the other half.</li>
+                            <li><strong>B - Border:</strong> Edges are irregular, ragged, notched, or blurred.</li>
+                            <li><strong>C - Color:</strong> Color is non-uniform (shades of brown, black, pink, red, white).</li>
+                            <li><strong>D - Diameter:</strong> Greater than 6 mm (size of a pencil eraser).</li>
+                            <li><strong>E - Evolving:</strong> Changing in size, shape, color, or elevation over time.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Mandatory Final Disclaimer -->
+                <div style="margin-top: 24px; font-size: 0.82rem; color: var(--text-muted); text-align: center; border-top: 1px solid var(--border-color); padding-top: 14px;">
+                    This screening output is produced by a MobileNetV2 neural network. It does not constitute medical advice, diagnosis, or prescription.
+                </div>
+            </div>
+        </section>
+
+        <!-- Diseases Explanation & Skin Conditions Library Section -->
+        <section id="diseases-guide" class="card">
+            <div class="card-title">
+                <div class="card-title-icon">🩺</div>
+                <div>
+                    <h2>Skin Diseases & Conditions Guide</h2>
+                    <p style="font-size: 0.9rem; font-weight: 500; color: var(--text-muted);">Explore medical definitions, symptoms, and precautionary guidance for all 8 supported classes.</p>
+                </div>
+            </div>
+
+            <!-- Disease Selector Tabs -->
+            <div class="disease-tabs" id="disease-tabs-container">
+                <!-- Rendered dynamically by JS -->
+            </div>
+
+            <!-- Selected Disease Detail Display -->
+            <div class="disease-detail-card" id="disease-detail-content">
+                <!-- Rendered dynamically by JS -->
+            </div>
+        </section>
+
+        <!-- Detailed How It Works Page & Pipeline Diagram -->
+        <section id="how-it-works" class="card">
+            <div class="card-title">
+                <div class="card-title-icon">⚙️</div>
+                <div>
+                    <h2>How SkinHealth AI Works</h2>
+                    <p style="font-size: 0.9rem; font-weight: 500; color: var(--text-muted);">A step-by-step technical walkthrough of the image analysis pipeline.</p>
+                </div>
+            </div>
+
+            <div class="how-it-works-pipeline">
+                <div class="pipeline-card">
+                    <div class="pipeline-step-num">1</div>
+                    <h4>Image Capture & Validation</h4>
+                    <p>User uploads or captures a skin lesion image. The system validates image format (JPG, PNG, WEBP), file size, resolution (min 100x100), and calculates blur variance using OpenCV Laplacian filtering.</p>
+                </div>
+
+                <div class="pipeline-card">
+                    <div class="pipeline-step-num">2</div>
+                    <h4>OpenCV Preprocessing & CLAHE</h4>
+                    <p>The image is converted to LAB color space. Contrast Limited Adaptive Histogram Equalization (CLAHE) is applied to the L-channel for boundary clarity, resized to 224x224, and normalized.</p>
+                </div>
+
+                <div class="pipeline-card">
+                    <div class="pipeline-step-num">3</div>
+                    <h4>MobileNetV2 Neural Network</h4>
+                    <p>The preprocessed tensor passes through a pretrained MobileNetV2 deep neural network. Bottleneck feature maps pass through GlobalAveragePooling2D, Dense, and Dropout regularization layers.</p>
+                </div>
+
+                <div class="pipeline-card">
+                    <div class="pipeline-step-num">4</div>
+                    <h4>Softmax Probability & Thresholding</h4>
+                    <p>The classification head outputs Softmax probabilities across 8 skin disease classes. The engine ranks probabilities descending and checks against the 50% confidence threshold.</p>
+                </div>
+
+                <div class="pipeline-card">
+                    <div class="pipeline-step-num">5</div>
+                    <h4>Guidance & History Sync</h4>
+                    <p>Generates tailored skincare advice, ABCDE melanoma checks, and dermatologist consultation steps, while logging predictions to SQLite and optional Supabase cloud storage.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Prediction History Section -->
+        <section id="history" class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+                <div class="card-title" style="margin-bottom: 0;">
+                    <div class="card-title-icon">📜</div>
+                    <h2>Prediction History (SQLite & Supabase)</h2>
+                </div>
+                <button class="btn btn-secondary" id="clear-history-btn" style="padding: 8px 16px; font-size: 0.88rem;">Clear All History</button>
+            </div>
+            
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Lesion</th>
+                        <th>Predicted Condition</th>
+                        <th>Confidence</th>
+                        <th>Date & Time</th>
+                        <th>Database Source</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="history-table-body">
+                    <!-- Loaded dynamically via JS -->
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Model Metrics & Performance Section -->
+        <section id="model-metrics" class="card">
+            <div class="card-title">
+                <div class="card-title-icon">📊</div>
+                <h2>Model Architecture & Performance Metrics</h2>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 0.98rem;">
+                SkinHealth AI utilizes <strong>MobileNetV2</strong> with transfer learning fine-tuned on 8 skin condition classes. Empirical evaluation results produced directly by dataset training:
+            </p>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Model Accuracy</div>
+                    <div class="metric-value" id="metric-accuracy">--%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Macro Precision</div>
+                    <div class="metric-value" id="metric-precision">--%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Macro Recall</div>
+                    <div class="metric-value" id="metric-recall">--%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Macro F1-Score</div>
+                    <div class="metric-value" id="metric-f1">--%</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Live Camera Stream Modal -->
+    <div class="modal" id="camera-modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-modal">&times;</span>
+            <h3 style="margin-bottom: 18px; font-size: 1.3rem;">Capture Skin Lesion Image</h3>
+            <video id="camera-stream" autoplay playsinline></video>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-primary" id="capture-photo-btn" type="button">📸 Capture Photo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p style="font-weight: 700; color: var(--text-primary);">SkinHealth AI — AI-Assisted Skin Lesion Detection & Screening System</p>
+            <p style="font-size: 0.85rem; margin-top: 6px;">Medical Disclaimer: This application is intended strictly for preliminary AI-assisted screening and educational demonstration. It is not a medical diagnosis tool and does not replace evaluation by a licensed healthcare professional.</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

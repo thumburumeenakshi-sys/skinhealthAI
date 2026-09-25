@@ -1,0 +1,27 @@
+# Environment variables (Contains secret API keys & URLs)
+.env
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# Python Cache & Artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Datasets & Uploads
+dataset/
+static/uploads/*
+!static/uploads/.gitkeep
+
+# Local SQLite Database
+database/*.db
+
+# IDE Files
+.vscode/
+.idea/
+*.swp
