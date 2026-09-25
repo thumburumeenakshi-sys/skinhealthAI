@@ -1,40 +1,62 @@
 import os
 import sys
 import json
+import traceback
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_cors import CORS
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import config
+
+# Absolute paths for templates and static files (critical for Vercel Serverless)
+template_dir = os.path.join(config.BASE_DIR, "templates")
+static_dir = os.path.join(config.BASE_DIR, "static")
+
+app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
+CORS(app)
+
 from src.predict import predict_skin_lesion
 from src.db import init_db, save_prediction, get_prediction_history, delete_prediction_history, clear_all_history
 
-app = Flask(__name__, template_folder="templates", static_folder="static")
-CORS(app)
-
-# Ensure required directories exist and DB is initialized
+# Safe initialization for database
 try:
-    os.makedirs(config.UPLOADS_DIR, exist_ok=True)
     init_db()
 except Exception as e:
-    print(f"App setup warning: {e}")
+    print(f"Serverless DB Init Warning: {e}")
+
+@app.errorhandler(Exception)
+def handle_global_exception(e):
+    """Global exception handler to prevent Vercel 500 FUNCTION_INVOCATION_FAILED crashes."""
+    print("=== Global Serverless Error Caught ===")
+    traceback.print_exc()
+    return jsonify({
+        "success": False,
+        "error": "Internal Server Error",
+        "message": str(e)
+    }), 500
 
 @app.route("/")
 def index():
     """Renders main application interface."""
     return render_template("index.html")
 
+@app.route("/static/<path:filename>")
+def serve_static(filename):
+    """Serves static frontend assets."""
+    return send_from_directory(static_dir, filename)
+
 @app.route("/static/uploads/<path:filename>")
 def serve_uploads(filename):
-    """Serves uploaded lesion images from configured upload directory (handles local and Vercel /tmp)."""
-    return send_from_directory(config.UPLOADS_DIR, filename)
+    """Serves uploaded lesion images from configured upload directory."""
+    if os.path.exists(os.path.join(config.UPLOADS_DIR, filename)):
+        return send_from_directory(config.UPLOADS_DIR, filename)
+    return jsonify({"error": "File not found"}), 404
 
 @app.route("/api/predict", methods=["POST"])
 def api_predict():
     """
     API Endpoint: Image Upload & AI Lesion Screening
-    Expects multipart form data with file field 'image'.
     """
     if "image" not in request.files:
         return jsonify({"success": False, "errors": ["No image file provided in request."]}), 400
@@ -43,13 +65,17 @@ def api_predict():
     if file.filename == "":
         return jsonify({"success": False, "errors": ["Selected file has an empty filename."]}), 400
 
-    # Save uploaded file safely
+    # Save uploaded file safely to /tmp or uploads folder
     filename = secure_filename(file.filename)
     import time
     timestamp_prefix = int(time.time())
     saved_filename = f"{timestamp_prefix}_{filename}"
     
-    os.makedirs(config.UPLOADS_DIR, exist_ok=True)
+    try:
+        os.makedirs(config.UPLOADS_DIR, exist_ok=True)
+    except Exception as e:
+        print(f"Uploads dir creation warning: {e}")
+        
     file_path = os.path.join(config.UPLOADS_DIR, saved_filename)
     file.save(file_path)
 
@@ -58,7 +84,10 @@ def api_predict():
 
     if not result["success"]:
         if os.path.exists(file_path):
-            os.remove(file_path)
+            try:
+                os.remove(file_path)
+            except Exception:
+                pass
         return jsonify(result), 400
 
     # URL path for frontend rendering
@@ -126,6 +155,9 @@ def api_model_info():
         "classes": config.SKIN_CONDITIONS,
         "evaluation_metrics": metrics
     })
+
+# Vercel entrypoint handler alias
+app_instance = app
 
 if __name__ == "__main__":
     print(f"Starting SkinHealth AI Server on http://127.0.0.1:5000")
