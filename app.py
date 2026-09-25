@@ -1,9 +1,11 @@
 import os
+import sys
 import json
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_cors import CORS
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import config
 from src.predict import predict_skin_lesion
 from src.db import init_db, save_prediction, get_prediction_history, delete_prediction_history, clear_all_history
@@ -12,13 +14,21 @@ app = Flask(__name__, template_folder="templates", static_folder="static")
 CORS(app)
 
 # Ensure required directories exist and DB is initialized
-os.makedirs(config.UPLOADS_DIR, exist_ok=True)
-init_db()
+try:
+    os.makedirs(config.UPLOADS_DIR, exist_ok=True)
+    init_db()
+except Exception as e:
+    print(f"App setup warning: {e}")
 
 @app.route("/")
 def index():
-    """Renders main single-page application interface."""
+    """Renders main application interface."""
     return render_template("index.html")
+
+@app.route("/static/uploads/<path:filename>")
+def serve_uploads(filename):
+    """Serves uploaded lesion images from configured upload directory (handles local and Vercel /tmp)."""
+    return send_from_directory(config.UPLOADS_DIR, filename)
 
 @app.route("/api/predict", methods=["POST"])
 def api_predict():
@@ -35,10 +45,11 @@ def api_predict():
 
     # Save uploaded file safely
     filename = secure_filename(file.filename)
-    # Append timestamp to filename to prevent collisions
     import time
     timestamp_prefix = int(time.time())
     saved_filename = f"{timestamp_prefix}_{filename}"
+    
+    os.makedirs(config.UPLOADS_DIR, exist_ok=True)
     file_path = os.path.join(config.UPLOADS_DIR, saved_filename)
     file.save(file_path)
 
@@ -46,16 +57,15 @@ def api_predict():
     result = predict_skin_lesion(file_path)
 
     if not result["success"]:
-        # Clean up invalid uploaded file
         if os.path.exists(file_path):
             os.remove(file_path)
         return jsonify(result), 400
 
-    # Static URL path for frontend rendering
+    # URL path for frontend rendering
     image_url = f"/static/uploads/{saved_filename}"
     result["image_url"] = image_url
 
-    # Save to SQLite history
+    # Save to SQLite / Supabase history
     try:
         record_id = save_prediction(result, image_url=image_url)
         result["history_record_id"] = record_id
@@ -102,11 +112,11 @@ def api_model_info():
         except Exception as e:
             metrics = {"error": f"Failed to load metrics: {str(e)}"}
 
-    model_trained = os.path.exists(config.MODEL_PATH)
+    model_trained = os.path.exists(config.MODEL_PATH) or os.path.exists(os.path.join(config.MODELS_DIR, "mobilenetv2_skinhealth.onnx"))
 
     return jsonify({
         "success": True,
-        "model_name": "MobileNetV2 Transfer Learning",
+        "model_name": "MobileNetV2 ONNX / Keras Engine",
         "input_shape": config.INPUT_SHAPE,
         "confidence_threshold": config.CONFIDENCE_THRESHOLD * 100,
         "model_trained": model_trained,
@@ -116,7 +126,6 @@ def api_model_info():
         "classes": config.SKIN_CONDITIONS,
         "evaluation_metrics": metrics
     })
-
 
 if __name__ == "__main__":
     print(f"Starting SkinHealth AI Server on http://127.0.0.1:5000")

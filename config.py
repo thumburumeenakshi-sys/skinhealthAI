@@ -6,17 +6,30 @@ except ImportError:
     pass
 
 # Base Directories
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODELS_DIR = os.path.join(BASE_DIR, "models")
-UPLOADS_DIR = os.path.join(BASE_DIR, "static", "uploads")
-DATABASE_DIR = os.path.join(BASE_DIR, "database")
-DATABASE_PATH = os.path.join(DATABASE_DIR, "history.db")
-DATASET_DIR = os.path.join(BASE_DIR, "dataset")
 
-# Create directories if they do not exist
+# Serverless / Vercel Environment Check (Vercel filesystem is read-only except /tmp)
+IS_VERCEL = bool(os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"))
+
+MODELS_DIR = os.path.join(BASE_DIR, "models")
+
+if IS_VERCEL:
+    UPLOADS_DIR = "/tmp/uploads"
+    DATABASE_DIR = "/tmp/database"
+    DATABASE_PATH = "/tmp/history.db"
+    DATASET_DIR = "/tmp/dataset"
+else:
+    UPLOADS_DIR = os.path.join(BASE_DIR, "static", "uploads")
+    DATABASE_DIR = os.path.join(BASE_DIR, "database")
+    DATABASE_PATH = os.path.join(DATABASE_DIR, "history.db")
+    DATASET_DIR = os.path.join(BASE_DIR, "dataset")
+
+# Create directories if writable
 for folder in [MODELS_DIR, UPLOADS_DIR, DATABASE_DIR, DATASET_DIR]:
-    os.makedirs(folder, exist_ok=True)
+    try:
+        os.makedirs(folder, exist_ok=True)
+    except Exception as e:
+        print(f"Directory creation warning for '{folder}': {e}")
 
 # Supabase Configuration (Optional Cloud History Storage)
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip()
@@ -25,7 +38,6 @@ USE_SUPABASE = bool(SUPABASE_URL and SUPABASE_KEY)
 
 # Model Settings
 MODEL_FILENAME = "mobilenetv2_skinhealth.h5"
-
 MODEL_PATH = os.path.join(MODELS_DIR, MODEL_FILENAME)
 METRICS_PATH = os.path.join(MODELS_DIR, "evaluation_results.json")
 CLASS_INDICES_PATH = os.path.join(MODELS_DIR, "class_indices.json")
